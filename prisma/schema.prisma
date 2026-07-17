@@ -7,11 +7,93 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ResourceStatus {
+  PENDING
+  READY
+  FAILED
+}
+
+enum QuizStatus {
+  GENERATING
+  READY
+  FAILED
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String
   email     String   @unique
+  courses   Course[]
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
-  @@index([email])
+model Course {
+  id        String     @id @default(cuid())
+  name      String
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resources Resource[]
+  quizzes   Quiz[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId])
+}
+
+model Resource {
+  id         String         @id @default(cuid())
+  title      String
+  url        String
+  transcript String?
+  meta       Json?
+  status     ResourceStatus @default(PENDING)
+  isEnabled  Boolean        @default(true)
+  courseId   String
+  course     Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([courseId])
+}
+
+model Quiz {
+  id          String        @id @default(cuid())
+  name        String
+  difficulty  Int
+  durationMin Int
+  status      QuizStatus    @default(GENERATING)
+  isArchived  Boolean       @default(false)
+  courseId    String
+  course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  mcqs        Mcq[]
+  attempts    QuizAttempt[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([courseId, createdAt])
+}
+
+model Mcq {
+  id          String   @id @default(cuid())
+  question    String
+  options     String[]
+  answerIndex Int
+  order       Int
+  quizId      String
+  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@unique([quizId, order])
+}
+
+model QuizAttempt {
+  id          String    @id @default(cuid())
+  quizId      String
+  quiz        Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers     Json
+  score       Int
+  startedAt   DateTime  @default(now())
+  submittedAt DateTime?
+
+  @@index([quizId, submittedAt])
 }
