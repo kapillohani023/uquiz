@@ -12,6 +12,26 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* UQuiz design tokens */
+@theme {
+  --color-uq-bg: #faf9f7;
+  --color-uq-surface: #fffdfc;
+  --color-uq-border: #eee7e3;
+  --color-uq-border-strong: #e2dad6;
+  --color-uq-border-dashed: #d6ccc6;
+  --color-uq-ink: #1c1917;
+  --color-uq-ink-hover: #33302c;
+  --color-uq-muted: #57534e;
+  --color-uq-faint: #a8a29e;
+  --color-uq-primary: #d0342c;
+  --color-uq-primary-hover: #b12a24;
+  --color-uq-primary-tint: #fdf6f4;
+  --color-uq-success: #2e7d43;
+  --color-uq-success-tint: #f0faf1;
+  --color-uq-warning: #b07d1e;
+  --color-uq-chip: #f5efec;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
