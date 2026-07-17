@@ -2,15 +2,62 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+### 1. Install Bun
+
+This project uses [Bun](https://bun.sh) as the package manager and runtime.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+# macOS / Linux
+curl -fsSL https://bun.sh/install | bash
+
+# Windows (PowerShell)
+powershell -c "irm bun.sh/install.ps1 | iex"
+```
+
+Verify the install with `bun --version`, then install dependencies:
+
+```bash
+bun install
+```
+
+### 2. Set up a local database
+
+Auth (via Prisma) needs a Postgres database. The easiest way locally is Docker:
+
+```bash
+docker run --name uquiz-db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=uquiz -p 5432:5432 -d postgres
+```
+
+Or point `DATABASE_URL` at any Postgres instance you already have running (local install, Supabase, etc.).
+
+Once the database is reachable, apply the schema:
+
+```bash
+bunx prisma migrate dev
+```
+
+### 3. Configure environment variables
+
+Copy `.env.example` to `.env` (or create `.env`) and fill in the values:
+
+```bash
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/uquiz
+
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+NEXTAUTH_SECRET=
+NEXTAUTH_URL=http://localhost:3000
+AUTH_TRUST_HOST=true
+```
+
+- `DATABASE_URL` — connection string for the database from step 2.
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — from a [Google Cloud OAuth client](https://console.cloud.google.com/apis/credentials) with `http://localhost:3000/api/auth/callback/google` as an authorized redirect URI.
+- `NEXTAUTH_SECRET` — any random string (generate one with `openssl rand -base64 32`).
+
+### 4. Run the dev server
+
+```bash
 bun dev
 ```
 
