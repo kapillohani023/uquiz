@@ -1,42 +1,36 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { FcGoogle } from "react-icons/fc";
 import { auth, signIn } from "@/app/auth";
+import { UQuizLogo } from "@/components/ui";
 
 export async function SignIn() {
   const session = await auth();
-  if (session) redirect("/dashboard");
+  if (session) redirect("/");
 
   return (
-    <div className="flex flex-1 items-center justify-center p-4">
-      <div className="w-full max-w-sm rounded-xl border border-black/10 p-8 shadow-sm dark:border-white/10">
-        <h1 className="mb-6 text-center text-2xl font-semibold">Sign In</h1>
-
+    <div className="flex flex-1 items-center justify-center p-6">
+      <div className="w-full max-w-[400px] rounded-2xl border border-uq-border bg-uq-surface px-11 py-12 text-center shadow-[0_2px_16px_rgba(28,25,23,0.05)]">
+        <UQuizLogo size="lg" />
+        <p className="mt-3.5 text-[15px] leading-relaxed text-uq-muted">
+          Turn YouTube links into custom courses and generate quizzes on the
+          fly.
+        </p>
         <form
           action={async () => {
             "use server";
-            await signIn("google", { redirectTo: "/dashboard" });
+            await signIn("google", { redirectTo: "/" });
           }}
         >
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-3 rounded-md border border-black/10 py-2.5 font-medium transition-colors hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/10"
+            className="mt-8 flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-[10px] bg-uq-ink px-4 py-[13px] text-[15px] font-medium text-uq-surface transition-colors hover:bg-uq-ink-hover"
           >
-            <FcGoogle size={20} />
-            Sign in with Google
+            <FcGoogle size={22} />
+            Continue with Google
           </button>
         </form>
-
-        <p className="mt-6 text-center text-xs text-black/60 dark:text-white/60">
-          By signing in you agree to our{" "}
-          <Link href="/terms" className="underline">
-            Terms
-          </Link>{" "}
-          and{" "}
-          <Link href="/privacy" className="underline">
-            Privacy Policy
-          </Link>
-          .
+        <p className="mt-[18px] text-xs text-uq-faint">
+          Free while in beta &middot; no card required
         </p>
       </div>
     </div>

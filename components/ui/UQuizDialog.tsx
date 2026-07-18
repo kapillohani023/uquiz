@@ -35,7 +35,7 @@ export function UQuizDialog({
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
         className={cx(
-          "w-full max-w-[420px] rounded-2xl bg-uq-surface p-8 shadow-[0_20px_60px_rgba(28,25,23,0.25)]",
+          "w-full max-w-[420px] rounded-2xl bg-uq-surface p-6 shadow-[0_20px_60px_rgba(28,25,23,0.25)] sm:p-8",
           className,
         )}
       >

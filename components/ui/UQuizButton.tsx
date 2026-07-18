@@ -16,6 +16,8 @@ const variants = {
 const sizes = {
   sm: "text-xs px-3 py-[5px] rounded-[7px]",
   md: "text-sm px-4 py-2 rounded-lg",
+  /** Dialog actions and quiz navigation (slightly taller, rounder). */
+  action: "text-sm px-[22px] py-2.5 rounded-[9px]",
   lg: "text-[15px] px-6 py-[13px] rounded-[10px]",
 } as const;
 

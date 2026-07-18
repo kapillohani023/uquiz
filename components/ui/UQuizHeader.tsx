@@ -19,7 +19,7 @@ export function UQuizHeader({
   return (
     <header
       className={cx(
-        "sticky top-0 z-30 flex items-center justify-between border-b border-uq-border bg-uq-surface px-10 py-[18px]",
+        "sticky top-0 z-30 flex items-center justify-between border-b border-uq-border bg-uq-surface px-5 py-[18px] sm:px-10",
         className,
       )}
     >

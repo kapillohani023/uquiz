@@ -23,7 +23,7 @@ export function UQuizPage({
   return (
     <main
       className={cx(
-        "mx-auto w-full flex-1 px-10 pt-8 pb-20",
+        "mx-auto w-full flex-1 px-5 pt-8 pb-20 sm:px-10",
         widths[width],
         className,
       )}

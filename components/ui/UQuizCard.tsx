@@ -5,7 +5,7 @@ const paddings = {
   none: "",
   sm: "p-4",
   md: "p-[22px]",
-  lg: "px-9 py-[34px]",
+  lg: "px-6 py-7 sm:px-9 sm:py-[34px]",
 } as const;
 
 export type UQuizCardProps = HTMLAttributes<HTMLDivElement> & {

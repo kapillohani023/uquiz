@@ -12,12 +12,15 @@ const tones: Record<UQuizTone, string> = {
 export function UQuizBadge({
   tone = "neutral",
   bold = false,
+  chip = false,
   className,
   children,
 }: {
   tone?: UQuizTone;
   /** Slightly larger, bolder pill — used for scores. */
   bold?: boolean;
+  /** Force the neutral chip background regardless of tone — used for score pills. */
+  chip?: boolean;
   className?: string;
   children: ReactNode;
 }) {
@@ -27,6 +30,7 @@ export function UQuizBadge({
         "inline-flex items-center rounded-full whitespace-nowrap",
         bold ? "text-[13px] font-semibold px-3.5 py-[5px]" : "text-xs px-2.5 py-[3px]",
         tones[tone],
+        chip && "bg-uq-chip",
         className,
       )}
     >

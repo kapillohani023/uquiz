@@ -2,6 +2,8 @@ import { cx } from "./UQuizUtils";
 
 const stripes =
   "repeating-linear-gradient(45deg,#f0e9e5,#f0e9e5 10px,#f7f2ef 10px,#f7f2ef 20px)";
+const stripesSmall =
+  "repeating-linear-gradient(45deg,#f0e9e5,#f0e9e5 6px,#f7f2ef 6px,#f7f2ef 12px)";
 
 /**
  * Striped video placeholder with a red play button.
@@ -22,7 +24,7 @@ export function UQuizVideoThumb({
           "flex size-[34px] shrink-0 items-center justify-center rounded-lg",
           className,
         )}
-        style={{ background: stripes }}
+        style={{ background: stripesSmall }}
       >
         <div className="ml-0.5 size-0 border-y-[5px] border-l-8 border-y-transparent border-l-uq-primary" />
       </div>
