@@ -29,20 +29,3 @@ export function UQuizLoader({
     </div>
   );
 }
-
-/** Full-screen translucent overlay variant (e.g. while a quiz generates). */
-export function UQuizLoadingOverlay({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle?: string;
-}) {
-  return (
-    <UQuizLoader
-      title={title}
-      subtitle={subtitle}
-      className="fixed inset-0 z-60 bg-uq-bg/92"
-    />
-  );
-}

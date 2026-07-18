@@ -58,7 +58,7 @@ export function CoursesView({ courses }: { courses: CourseRow[] }) {
     <Link
       href={`/quizzes?course=${c.id}`}
       onClick={(e) => e.stopPropagation()}
-      className="text-[13px] text-uq-primary hover:text-uq-primary-hover"
+      className="text-[13px] text-uq-primary hover:text-uq-link-hover"
     >
       {c.quizCount} {c.quizCount === 1 ? "quiz" : "quizzes"}
     </Link>
@@ -67,6 +67,7 @@ export function CoursesView({ courses }: { courses: CourseRow[] }) {
   return (
     <UQuizPage className="pt-9">
       <UQuizPageHeader
+        className="mb-[26px]"
         title="Courses"
         actions={
           <UQuizViewToggle options={viewOptions} value={view} onChange={setView} />

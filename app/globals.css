@@ -26,10 +26,45 @@
   --color-uq-primary: #d0342c;
   --color-uq-primary-hover: #b12a24;
   --color-uq-primary-tint: #fdf6f4;
+  --color-uq-amber: #e0a52b;
+  --color-uq-link-hover: #a82520;
   --color-uq-success: #2e7d43;
   --color-uq-success-tint: #f0faf1;
   --color-uq-warning: #b07d1e;
   --color-uq-chip: #f5efec;
+
+  --animate-uq-sparkle: uq-sparkle 1.6s ease-in-out infinite;
+  --animate-uq-orbit: uq-orbit 2.4s linear infinite;
+  --animate-uq-orbit-reverse: uq-orbit 3.2s linear infinite reverse;
+  --animate-uq-shimmer: uq-shimmer 2.5s linear infinite;
+
+  @keyframes uq-sparkle {
+    0%,
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.25) rotate(20deg);
+      opacity: 0.8;
+    }
+  }
+  @keyframes uq-orbit {
+    from {
+      transform: rotate(0deg) translateX(34px) rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg) translateX(34px) rotate(-360deg);
+    }
+  }
+  @keyframes uq-shimmer {
+    0% {
+      background-position: 200% 50%;
+    }
+    100% {
+      background-position: -200% 50%;
+    }
+  }
 }
 
 body {

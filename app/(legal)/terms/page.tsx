@@ -86,7 +86,7 @@ export default function TermsPage() {
       <LegalSection heading="9. Contact">
         <p>
           Questions about these terms? See our{" "}
-          <Link href="/privacy" className="text-uq-primary hover:text-uq-primary-hover">
+          <Link href="/privacy" className="text-uq-primary hover:text-uq-link-hover">
             Privacy Policy
           </Link>{" "}
           or contact us at support@uquiz.app.

@@ -11,8 +11,8 @@ import {
   UQuizDialog,
   UQuizDialogActions,
   UQuizEmptyState,
+  UQuizGeneratingOverlay,
   UQuizInput,
-  UQuizLoadingOverlay,
   UQuizMenu,
   UQuizPage,
   UQuizPageHeader,
@@ -357,9 +357,8 @@ export function CourseView({
       </UQuizDialog>
 
       {generating && (
-        <UQuizLoadingOverlay
-          title="Generating quiz…"
-          subtitle={`Analyzing ${pluralize(enabledCount, "resource")} in ${course.name}`}
+        <UQuizGeneratingOverlay
+          subtitle={`AI is working through ${enabledCount} ${enabledCount === 1 ? "video" : "videos"} in ${course.name}`}
         />
       )}
     </UQuizPage>

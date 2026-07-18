@@ -82,7 +82,7 @@ export default function PrivacyPage() {
         <p>
           Questions or deletion requests: support@uquiz.app. You can also read
           our{" "}
-          <Link href="/terms" className="text-uq-primary hover:text-uq-primary-hover">
+          <Link href="/terms" className="text-uq-primary hover:text-uq-link-hover">
             Terms of Service
           </Link>
           .
