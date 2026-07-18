@@ -4,6 +4,9 @@ import { cx } from "./UQuizUtils";
 const variants = {
   primary:
     "bg-uq-primary text-white font-semibold shadow-[0_4px_14px_rgba(208,52,44,0.3)] hover:bg-uq-primary-hover",
+  /** Red→orange gradient used by the create-quiz flow. */
+  gradient:
+    "bg-[linear-gradient(135deg,#d0342c,#e05a2b)] text-white font-semibold shadow-[0_4px_14px_rgba(208,52,44,0.3)] hover:bg-none hover:bg-uq-primary-hover",
   ink: "bg-uq-ink text-white font-medium hover:bg-uq-ink-hover",
   secondary:
     "bg-white border border-uq-border-strong text-uq-ink hover:border-uq-primary hover:text-uq-primary",

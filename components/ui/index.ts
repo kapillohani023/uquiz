@@ -13,6 +13,7 @@ export { UQuizTimer } from "./UQuizTimer";
 export { UQuizSpinner } from "./UQuizSpinner";
 export { UQuizLoader } from "./UQuizLoader";
 export { UQuizGeneratingOverlay } from "./UQuizGeneratingOverlay";
+export { UQuizSparkle } from "./UQuizSparkle";
 export { UQuizEmptyState } from "./UQuizEmptyState";
 export { UQuizDashedButton, type UQuizDashedButtonProps } from "./UQuizDashedButton";
 export { UQuizHeader } from "./UQuizHeader";

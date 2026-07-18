@@ -11,6 +11,7 @@ export function UQuizDialog({
   open,
   onClose,
   title,
+  icon,
   description,
   children,
   className,
@@ -18,6 +19,8 @@ export function UQuizDialog({
   open: boolean;
   onClose: () => void;
   title?: string;
+  /** Optional glyph rendered before the title. */
+  icon?: ReactNode;
   description?: string;
   children: ReactNode;
   className?: string;
@@ -42,10 +45,11 @@ export function UQuizDialog({
         {title && (
           <h2
             className={cx(
-              "text-[19px] font-bold tracking-[-0.3px] text-uq-ink",
+              "flex items-center gap-2 text-[19px] font-bold tracking-[-0.3px] text-uq-ink",
               description ? "mb-1.5" : "mb-[18px]",
             )}
           >
+            {icon}
             {title}
           </h2>
         )}

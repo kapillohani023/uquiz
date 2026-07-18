@@ -17,6 +17,7 @@ import {
   UQuizPage,
   UQuizPageHeader,
   UQuizSlider,
+  UQuizSparkle,
   UQuizVideoThumb,
   UQuizViewToggle,
   cx,
@@ -226,11 +227,12 @@ export function CourseView({
 
       <UQuizActionBar>
         <UQuizButton
-          variant="primary"
+          variant="gradient"
           size="lg"
-          className="px-[34px]"
+          className="gap-[9px] px-[30px]"
           onClick={() => setDialog("createQuiz")}
         >
+          <UQuizSparkle size={17} pulse="slow" />
           Create quiz
         </UQuizButton>
         <UQuizButton
@@ -281,6 +283,7 @@ export function CourseView({
         open={dialog === "createQuiz"}
         onClose={() => setDialog(null)}
         title="Create quiz"
+        icon={<UQuizSparkle size={18} className="text-uq-primary" />}
         description={`Generated from the enabled resources in ${course.name}.`}
       >
         <UQuizSlider
@@ -314,7 +317,13 @@ export function CourseView({
           <UQuizButton variant="ghost" onClick={() => setDialog(null)}>
             Cancel
           </UQuizButton>
-          <UQuizButton variant="primary" size="action" onClick={generateQuiz}>
+          <UQuizButton
+            variant="gradient"
+            size="action"
+            className="gap-2 px-5"
+            onClick={generateQuiz}
+          >
+            <UQuizSparkle size={14} />
             Generate
           </UQuizButton>
         </UQuizDialogActions>
@@ -322,8 +331,8 @@ export function CourseView({
 
       <UQuizDialog open={dialog === "generated"} onClose={() => setDialog(null)}>
         <div className="text-center">
-          <div className="mx-auto mb-4 flex size-[52px] items-center justify-center rounded-full bg-uq-success-tint text-2xl text-uq-success">
-            ✓
+          <div className="mx-auto mb-4 flex size-[52px] items-center justify-center rounded-full bg-[linear-gradient(135deg,#fdf6f4,#fdf1e3)]">
+            <UQuizSparkle size={24} pulse="slow" className="text-uq-primary" />
           </div>
           <h2 className="text-[19px] font-bold tracking-[-0.3px]">
             Quiz generated

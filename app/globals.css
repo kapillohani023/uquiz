@@ -34,6 +34,7 @@
   --color-uq-chip: #f5efec;
 
   --animate-uq-sparkle: uq-sparkle 1.6s ease-in-out infinite;
+  --animate-uq-sparkle-slow: uq-sparkle 2.2s ease-in-out infinite;
   --animate-uq-orbit: uq-orbit 2.4s linear infinite;
   --animate-uq-orbit-reverse: uq-orbit 3.2s linear infinite reverse;
   --animate-uq-shimmer: uq-shimmer 2.5s linear infinite;

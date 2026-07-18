@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { UQuizSparkle } from "./UQuizSparkle";
 
 const defaultStatuses = [
   "Reading video transcripts…",
@@ -33,14 +34,7 @@ export function UQuizGeneratingOverlay({
   return (
     <div className="fixed inset-0 z-60 flex flex-col items-center justify-center gap-5 bg-uq-bg/94">
       <div aria-hidden className="relative flex size-[90px] items-center justify-center">
-        <svg
-          width="44"
-          height="44"
-          viewBox="0 0 24 24"
-          className="animate-uq-sparkle fill-uq-primary"
-        >
-          <path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z" />
-        </svg>
+        <UQuizSparkle size={44} pulse="fast" className="text-uq-primary" />
         <div className="animate-uq-orbit absolute top-1/2 left-1/2 -mt-1 -ml-1 size-2 rounded-full bg-uq-amber" />
         <div className="animate-uq-orbit-reverse absolute top-1/2 left-1/2 -mt-[3px] -ml-[3px] size-1.5 rounded-full bg-uq-primary opacity-60" />
       </div>
