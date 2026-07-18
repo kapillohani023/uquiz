@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { FcGoogle } from "react-icons/fc";
 import { auth, signIn } from "@/app/auth";
@@ -31,6 +32,21 @@ export async function SignIn() {
         </form>
         <p className="mt-[18px] text-xs text-uq-faint">
           Free while in beta &middot; no card required
+        </p>
+        <p className="mt-2 text-xs text-uq-faint">
+          <Link
+            href="/terms"
+            className="text-uq-faint underline-offset-2 transition-colors hover:text-uq-primary"
+          >
+            Terms
+          </Link>{" "}
+          &middot;{" "}
+          <Link
+            href="/privacy"
+            className="text-uq-faint underline-offset-2 transition-colors hover:text-uq-primary"
+          >
+            Privacy
+          </Link>
         </p>
       </div>
     </div>
