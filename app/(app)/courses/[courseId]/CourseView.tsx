@@ -156,14 +156,10 @@ export function CourseView({
       ) : view === "grid" ? (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-[18px]">
           {resources.map((r) => (
-            <UQuizCard
-              key={r.id}
-              padding="none"
-              className={cx(!r.isEnabled && "opacity-45")}
-            >
-              <UQuizVideoThumb />
+            <UQuizCard key={r.id} padding="none">
+              <UQuizVideoThumb className={cx(!r.isEnabled && "opacity-45")} />
               <div className="flex items-start gap-2 px-4 pt-3.5 pb-4">
-                <div className="min-w-0 flex-1">
+                <div className={cx("min-w-0 flex-1", !r.isEnabled && "opacity-45")}>
                   <div className="text-sm leading-snug font-semibold">
                     {r.title}
                   </div>
@@ -182,17 +178,22 @@ export function CourseView({
             <UQuizCard
               key={r.id}
               padding="none"
-              className={cx(
-                "flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl px-[18px] py-3",
-                !r.isEnabled && "opacity-45",
-              )}
+              className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl px-[18px] py-3"
             >
-              <UQuizVideoThumb variant="row" />
-              <div className="min-w-0 flex-1">
+              <UQuizVideoThumb
+                variant="row"
+                className={cx(!r.isEnabled && "opacity-45")}
+              />
+              <div className={cx("min-w-0 flex-1", !r.isEnabled && "opacity-45")}>
                 <div className="text-sm font-semibold">{r.title}</div>
                 <div className="text-xs text-uq-faint">{r.url}</div>
               </div>
-              <div className="text-xs whitespace-nowrap text-uq-faint">
+              <div
+                className={cx(
+                  "text-xs whitespace-nowrap text-uq-faint",
+                  !r.isEnabled && "opacity-45",
+                )}
+              >
                 added {formatDate(r.addedAt)}
               </div>
               <UQuizBadge tone={r.isEnabled ? "success" : "muted"}>

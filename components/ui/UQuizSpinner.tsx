@@ -24,20 +24,3 @@ export function UQuizSpinner({
     />
   );
 }
-
-/** Full-screen translucent overlay with spinner, title, and subtitle. */
-export function UQuizLoadingOverlay({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle?: string;
-}) {
-  return (
-    <div className="fixed inset-0 z-60 flex flex-col items-center justify-center gap-[18px] bg-uq-bg/92">
-      <UQuizSpinner />
-      <div className="text-[15px] font-semibold text-uq-ink">{title}</div>
-      {subtitle && <div className="text-[13px] text-uq-faint">{subtitle}</div>}
-    </div>
-  );
-}
