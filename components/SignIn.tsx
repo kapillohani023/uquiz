@@ -31,8 +31,9 @@ export async function SignIn() {
           Turn YouTube videos into quizzes you&apos;ll actually remember
         </h1>
         <p className="mt-3 text-[15px] leading-relaxed text-uq-muted">
-          Drop in a few links, and uquiz reads the transcripts, writes
-          multiple-choice questions, and times you on what you just watched.
+          Stop rewatching videos to cram before a test. Drop in a YouTube
+          link and uquiz turns it into a timed quiz in seconds — so you find
+          out what actually stuck.
         </p>
         <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
           {features.map((f, i) => (
