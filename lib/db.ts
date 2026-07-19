@@ -121,7 +121,7 @@ export async function deleteCourse(userId: string, courseId: string) {
 export async function addResource(
   userId: string,
   courseId: string,
-  data: { title: string; url: string },
+  data: { title: string; url: string; meta?: Prisma.InputJsonValue },
 ) {
   const course = await prisma.course.findFirst({
     where: { id: courseId, userId },

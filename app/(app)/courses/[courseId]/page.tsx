@@ -17,14 +17,18 @@ export default async function CoursePage({
     <CourseView
       course={{ id: course.id, name: course.name }}
       quizCount={course._count.quizzes}
-      resources={course.resources.map((r) => ({
-        id: r.id,
-        title: r.title,
-        url: r.url,
-        isEnabled: r.isEnabled,
-        status: r.status,
-        addedAt: r.createdAt.toISOString(),
-      }))}
+      resources={course.resources.map((r) => {
+        const meta = r.meta as { thumbnailUrl?: string | null } | null;
+        return {
+          id: r.id,
+          title: r.title,
+          url: r.url,
+          isEnabled: r.isEnabled,
+          status: r.status,
+          addedAt: r.createdAt.toISOString(),
+          thumbnailUrl: meta?.thumbnailUrl ?? null,
+        };
+      })}
     />
   );
 }

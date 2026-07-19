@@ -5,9 +5,10 @@ import { cx } from "./UQuizUtils";
 
 export type UQuizInputProps = InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
+  error?: string;
 };
 
-export function UQuizInput({ label, className, id, ...rest }: UQuizInputProps) {
+export function UQuizInput({ label, error, className, id, ...rest }: UQuizInputProps) {
   const autoId = useId();
   const inputId = id ?? autoId;
 
@@ -20,13 +21,18 @@ export function UQuizInput({ label, className, id, ...rest }: UQuizInputProps) {
       )}
       <input
         id={inputId}
+        aria-invalid={error ? true : undefined}
         className={cx(
-          "w-full rounded-[9px] border border-uq-border-strong bg-white px-3.5 py-[11px]",
+          "w-full rounded-[9px] border bg-white px-3.5 py-[11px]",
           "text-sm text-uq-ink placeholder:text-uq-faint outline-none",
-          "focus:border-uq-primary transition-colors",
+          "transition-colors",
+          error
+            ? "border-uq-primary"
+            : "border-uq-border-strong focus:border-uq-primary",
         )}
         {...rest}
       />
+      {error && <p className="mt-1.5 text-xs text-uq-primary">{error}</p>}
     </div>
   );
 }

@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/app/auth";
 import * as db from "@/lib/db";
-import { fetchYoutubeTranscript, generateQuestions } from "@/lib/services";
+import {
+  fetchYoutubeTranscript,
+  fetchYoutubeVideoMeta,
+  generateQuestions,
+} from "@/lib/services";
+import { extractYoutubeVideoId } from "@/lib/youtube";
 
 async function requireUserId() {
   const session = await auth();
@@ -29,19 +34,37 @@ export async function addResourceAction(
   courseId: string,
   url: string,
   title: string,
-) {
+): Promise<{ error?: string }> {
   const userId = await requireUserId();
+
+  const videoId = extractYoutubeVideoId(url);
+  if (!videoId) {
+    return { error: "That doesn't look like a YouTube video URL." };
+  }
+
+  let videoMeta;
+  try {
+    videoMeta = await fetchYoutubeVideoMeta(videoId);
+  } catch {
+    return { error: "Couldn't reach YouTube to verify the video. Try again." };
+  }
+  if (!videoMeta) {
+    return { error: "No YouTube video exists at that URL." };
+  }
+
   const resource = await db.addResource(userId, courseId, {
-    title: title.trim() || "YouTube video",
+    title: title.trim() || videoMeta.title,
     url: url.trim().replace(/^https?:\/\//, ""),
+    meta: videoMeta,
   });
   try {
-    const { transcript, meta } = await fetchYoutubeTranscript(resource.url);
-    await db.markResourceReady(resource.id, transcript, meta);
+    const { transcript } = await fetchYoutubeTranscript(resource.url);
+    await db.markResourceReady(resource.id, transcript);
   } catch {
     await db.markResourceFailed(resource.id);
   }
   revalidatePath(`/courses/${courseId}`);
+  return {};
 }
 
 export async function setResourceEnabledAction(

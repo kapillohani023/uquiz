@@ -2,15 +2,56 @@ import type { Resource } from "@prisma/client";
 import OpenAI from "openai";
 import { YoutubeTranscript } from "youtube-transcript";
 import { DIFFICULTY_LABELS } from "@/lib/format";
+import { extractYoutubeVideoId, type YoutubeVideoMeta } from "@/lib/youtube";
 import type { GeneratedQuestion } from "@/lib/db";
 
-const YOUTUBE_ID_PATTERN =
-  /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-
 function extractVideoId(url: string): string {
-  const match = url.match(YOUTUBE_ID_PATTERN);
-  if (!match) throw new Error(`Not a recognizable YouTube URL: ${url}`);
-  return match[1];
+  const videoId = extractYoutubeVideoId(url);
+  if (!videoId) throw new Error(`Not a recognizable YouTube URL: ${url}`);
+  return videoId;
+}
+
+/**
+ * Look up a video via the YouTube Data API. Returns null when the video
+ * doesn't exist (or is private); throws on missing key / API failure.
+ */
+export async function fetchYoutubeVideoMeta(
+  videoId: string,
+): Promise<YoutubeVideoMeta | null> {
+  const key = process.env.YOUTUBE_API_KEY;
+  if (!key) throw new Error("YOUTUBE_API_KEY is not set");
+
+  const params = new URLSearchParams({ part: "snippet", id: videoId, key });
+  const response = await fetch(
+    `https://www.googleapis.com/youtube/v3/videos?${params}`,
+  );
+  if (!response.ok) {
+    throw new Error(`YouTube API request failed with status ${response.status}`);
+  }
+
+  const data = (await response.json()) as {
+    items?: {
+      snippet?: {
+        title: string;
+        channelTitle: string;
+        publishedAt: string;
+        thumbnails?: Record<string, { url: string }>;
+      };
+    }[];
+  };
+  const snippet = data.items?.[0]?.snippet;
+  if (!snippet) return null;
+
+  const thumbs = snippet.thumbnails ?? {};
+  const thumb =
+    thumbs.maxres ?? thumbs.high ?? thumbs.medium ?? thumbs.default;
+  return {
+    videoId,
+    title: snippet.title,
+    channelTitle: snippet.channelTitle,
+    thumbnailUrl: thumb?.url ?? null,
+    publishedAt: snippet.publishedAt,
+  };
 }
 
 export async function fetchYoutubeTranscript(
@@ -18,6 +59,7 @@ export async function fetchYoutubeTranscript(
 ): Promise<{ transcript: string; meta: { sourceUrl: string; videoId: string } }> {
   const videoId = extractVideoId(url);
   const segments = await YoutubeTranscript.fetchTranscript(videoId);
+  console.log(`Fetched ${segments.length} transcript segments for video ${videoId}`);
 
   const lines = segments.map((s) => s.text.trim()).filter((line) => line.length > 0);
   if (lines.length === 0) {

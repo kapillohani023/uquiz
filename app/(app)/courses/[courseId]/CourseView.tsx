@@ -18,11 +18,13 @@ import {
   UQuizPageHeader,
   UQuizSlider,
   UQuizSparkle,
+  UQuizSpinner,
   UQuizVideoThumb,
   UQuizViewToggle,
   cx,
 } from "@/components/ui";
 import { difficultyLabel, formatDate, pluralize } from "@/lib/format";
+import { extractYoutubeVideoId } from "@/lib/youtube";
 import {
   addResourceAction,
   deleteResourceAction,
@@ -37,6 +39,7 @@ export type ResourceRow = {
   isEnabled: boolean;
   status: "PENDING" | "READY" | "FAILED";
   addedAt: string;
+  thumbnailUrl: string | null;
 };
 
 type Dialog = null | "addResource" | "createQuiz" | "generated";
@@ -67,6 +70,7 @@ export function CourseView({
   const [view, setView] = useState<"grid" | "list">("grid");
   const [dialog, setDialog] = useState<Dialog>(null);
   const [url, setUrl] = useState("");
+  const [urlError, setUrlError] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [questionCount, setQuestionCount] = useState(5);
   const [difficulty, setDifficulty] = useState(3);
@@ -75,13 +79,37 @@ export function CourseView({
   const [generated, setGenerated] = useState<GeneratedQuiz | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const [pendingResourceId, setPendingResourceId] = useState<string | null>(null);
+
   const enabledCount = resources.filter((r) => r.isEnabled).length;
+  const readySourceCount = resources.filter(
+    (r) => r.isEnabled && r.status === "READY",
+  ).length;
+
+  const mutateResource = (resourceId: string, action: () => Promise<void>) => {
+    setPendingResourceId(resourceId);
+    startTransition(async () => {
+      try {
+        await action();
+      } finally {
+        setPendingResourceId(null);
+      }
+    });
+  };
 
   const addResource = () => {
     if (!url.trim() || isPending) return;
+    if (!extractYoutubeVideoId(url)) {
+      setUrlError("Paste a valid YouTube video URL.");
+      return;
+    }
     startTransition(async () => {
-      await addResourceAction(course.id, url, title);
-      setDialog(null);
+      const result = await addResourceAction(course.id, url, title);
+      if (result?.error) {
+        setUrlError(result.error);
+      } else {
+        setDialog(null);
+      }
     });
   };
 
@@ -101,25 +129,28 @@ export function CourseView({
     }
   };
 
-  const resourceMenu = (r: ResourceRow) => (
-    <UQuizMenu
-      items={[
-        {
-          label: r.isEnabled ? "Disable" : "Enable",
-          onSelect: () =>
-            startTransition(() =>
-              setResourceEnabledAction(course.id, r.id, !r.isEnabled),
-            ),
-        },
-        {
-          label: "Delete",
-          danger: true,
-          onSelect: () =>
-            startTransition(() => deleteResourceAction(course.id, r.id)),
-        },
-      ]}
-    />
-  );
+  const resourceMenu = (r: ResourceRow) =>
+    pendingResourceId === r.id ? (
+      <UQuizSpinner size="sm" className="mt-0.5 shrink-0" />
+    ) : (
+      <UQuizMenu
+        items={[
+          {
+            label: r.isEnabled ? "Disable" : "Enable",
+            onSelect: () =>
+              mutateResource(r.id, () =>
+                setResourceEnabledAction(course.id, r.id, !r.isEnabled),
+              ),
+          },
+          {
+            label: "Delete",
+            danger: true,
+            onSelect: () =>
+              mutateResource(r.id, () => deleteResourceAction(course.id, r.id)),
+          },
+        ]}
+      />
+    );
 
   return (
     <UQuizPage className="pb-32">
@@ -141,6 +172,7 @@ export function CourseView({
               className="text-[13px] font-medium"
               onClick={() => {
                 setUrl("");
+                setUrlError(null);
                 setTitle("");
                 setDialog("addResource");
               }}
@@ -159,7 +191,11 @@ export function CourseView({
         <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-[18px]">
           {resources.map((r) => (
             <UQuizCard key={r.id} padding="none">
-              <UQuizVideoThumb className={cx(!r.isEnabled && "opacity-45")} />
+              <UQuizVideoThumb
+                src={r.thumbnailUrl}
+                alt={r.title}
+                className={cx(!r.isEnabled && "opacity-45")}
+              />
               <div className="flex items-start gap-2 px-4 pt-3.5 pb-4">
                 <div className={cx("min-w-0 flex-1", !r.isEnabled && "opacity-45")}>
                   <div className="text-sm leading-snug font-semibold">
@@ -189,6 +225,8 @@ export function CourseView({
             >
               <UQuizVideoThumb
                 variant="row"
+                src={r.thumbnailUrl}
+                alt={r.title}
                 className={cx(!r.isEnabled && "opacity-45")}
               />
               <div className={cx("min-w-0 flex-1", !r.isEnabled && "opacity-45")}>
@@ -209,26 +247,36 @@ export function CourseView({
               {r.status === "FAILED" && (
                 <UQuizBadge tone="danger">Couldn&apos;t fetch transcript</UQuizBadge>
               )}
-              <UQuizButton
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  startTransition(() =>
-                    setResourceEnabledAction(course.id, r.id, !r.isEnabled),
-                  )
-                }
-              >
-                {r.isEnabled ? "Disable" : "Enable"}
-              </UQuizButton>
-              <UQuizButton
-                variant="danger"
-                size="sm"
-                onClick={() =>
-                  startTransition(() => deleteResourceAction(course.id, r.id))
-                }
-              >
-                Delete
-              </UQuizButton>
+              {pendingResourceId === r.id ? (
+                <UQuizSpinner size="sm" />
+              ) : (
+                <>
+                  <UQuizButton
+                    variant="outline"
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() =>
+                      mutateResource(r.id, () =>
+                        setResourceEnabledAction(course.id, r.id, !r.isEnabled),
+                      )
+                    }
+                  >
+                    {r.isEnabled ? "Disable" : "Enable"}
+                  </UQuizButton>
+                  <UQuizButton
+                    variant="danger"
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() =>
+                      mutateResource(r.id, () =>
+                        deleteResourceAction(course.id, r.id),
+                      )
+                    }
+                  >
+                    Delete
+                  </UQuizButton>
+                </>
+              )}
             </UQuizCard>
           ))}
         </div>
@@ -239,6 +287,12 @@ export function CourseView({
           variant="gradient"
           size="lg"
           className="gap-[9px] px-[30px]"
+          disabled={readySourceCount === 0}
+          title={
+            readySourceCount === 0
+              ? "Add an enabled resource with a transcript first"
+              : undefined
+          }
           onClick={() => setDialog("createQuiz")}
         >
           <UQuizSparkle size={17} pulse="slow" />
@@ -263,7 +317,12 @@ export function CourseView({
           label="YouTube URL"
           placeholder="https://youtube.com/watch?v=..."
           value={url}
-          onChange={(e) => setUrl(e.target.value)}
+          error={urlError ?? undefined}
+          onChange={(e) => {
+            setUrl(e.target.value);
+            setUrlError(null);
+          }}
+          disabled={isPending}
           autoFocus
         />
         <UQuizInput
@@ -272,19 +331,29 @@ export function CourseView({
           placeholder="Video title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          disabled={isPending}
         />
         <UQuizDialogActions>
-          <UQuizButton variant="ghost" onClick={() => setDialog(null)}>
-            Cancel
-          </UQuizButton>
-          <UQuizButton
-            variant="primary"
-            size="action"
-            onClick={addResource}
-            disabled={!url.trim() || isPending}
-          >
-            {isPending ? "Adding…" : "Add"}
-          </UQuizButton>
+          {isPending ? (
+            <div className="flex items-center gap-2.5 py-1.5 text-[13px] text-uq-muted">
+              <UQuizSpinner size="sm" />
+              Verifying video…
+            </div>
+          ) : (
+            <>
+              <UQuizButton variant="ghost" onClick={() => setDialog(null)}>
+                Cancel
+              </UQuizButton>
+              <UQuizButton
+                variant="primary"
+                size="action"
+                onClick={addResource}
+                disabled={!url.trim()}
+              >
+                Add
+              </UQuizButton>
+            </>
+          )}
         </UQuizDialogActions>
       </UQuizDialog>
 

@@ -43,6 +43,7 @@ export function UQuizButton({
       type={type}
       className={cx(
         "inline-flex items-center justify-center gap-2.5 cursor-pointer transition-colors",
+        "disabled:cursor-not-allowed disabled:opacity-50",
         variants[variant],
         sizes[size],
         fullWidth && "w-full",
