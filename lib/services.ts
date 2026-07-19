@@ -1,31 +1,142 @@
 import type { Resource } from "@prisma/client";
+import OpenAI from "openai";
+import { YoutubeTranscript } from "youtube-transcript";
+import { DIFFICULTY_LABELS } from "@/lib/format";
 import type { GeneratedQuestion } from "@/lib/db";
 
-/**
- * Stub integrations. Replace with real YouTube transcript fetching and
- * LLM-backed question generation.
- */
+const YOUTUBE_ID_PATTERN =
+  /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+
+function extractVideoId(url: string): string {
+  const match = url.match(YOUTUBE_ID_PATTERN);
+  if (!match) throw new Error(`Not a recognizable YouTube URL: ${url}`);
+  return match[1];
+}
 
 export async function fetchYoutubeTranscript(
   url: string,
-): Promise<{ transcript: string; meta: { sourceUrl: string } }> {
+): Promise<{ transcript: string; meta: { sourceUrl: string; videoId: string } }> {
+  const videoId = extractVideoId(url);
+  const segments = await YoutubeTranscript.fetchTranscript(videoId);
+
+  const lines = segments.map((s) => s.text.trim()).filter((line) => line.length > 0);
+  if (lines.length === 0) {
+    throw new Error(`No captions available for video ${videoId}`);
+  }
+
   return {
-    transcript: `(stub transcript for ${url})`,
-    meta: { sourceUrl: url },
+    transcript: lines.join(" "),
+    meta: { sourceUrl: url, videoId },
   };
 }
+
+const openrouter = new OpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1",
+});
+
+const QUESTION_MODEL = "openai/gpt-oss-20b:free";
+
+// Keeps the combined transcript context within the free-tier model's
+// context budget while leaving room for the prompt and response.
+const MAX_CONTEXT_CHARS = 60_000;
+
+// The free model doesn't always honor response_format: json_object and
+// sometimes wraps its answer in a ```json ... ``` fence — strip that off
+// before parsing.
+function extractJson(raw: string): string {
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  return (fenced ? fenced[1] : raw).trim();
+}
+
+function parseQuestions(raw: string): GeneratedQuestion[] {
+  const parsed = JSON.parse(extractJson(raw)) as { questions?: unknown };
+  if (!Array.isArray(parsed.questions)) {
+    throw new Error("Malformed question-generation response: missing questions array");
+  }
+
+  return parsed.questions.filter(
+    (q): q is GeneratedQuestion =>
+      typeof q === "object" &&
+      q !== null &&
+      typeof (q as GeneratedQuestion).question === "string" &&
+      Array.isArray((q as GeneratedQuestion).options) &&
+      (q as GeneratedQuestion).options.length === 4 &&
+      Number.isInteger((q as GeneratedQuestion).answerIndex) &&
+      (q as GeneratedQuestion).answerIndex >= 0 &&
+      (q as GeneratedQuestion).answerIndex < 4,
+  );
+}
+
+const GENERATION_ATTEMPTS = 2;
 
 export async function generateQuestions(
   sources: Resource[],
   count: number,
   difficulty: number,
 ): Promise<GeneratedQuestion[]> {
-  const sourceNote = sources.length
-    ? sources.map((s) => s.title).join(", ")
-    : "no sources";
-  return Array.from({ length: count }, (_, i) => ({
-    question: `Placeholder question ${i + 1} (difficulty ${difficulty}/5, sources: ${sourceNote})`,
-    options: ["Option A", "Option B", "Option C", "Option D"],
-    answerIndex: i % 4,
-  }));
+  if (sources.length === 0) {
+    throw new Error("No ready sources to generate questions from");
+  }
+
+  const context = sources
+    .map((s) => `### ${s.title}\n${s.transcript}`)
+    .join("\n\n")
+    .slice(0, MAX_CONTEXT_CHARS);
+
+  const difficultyLabel = DIFFICULTY_LABELS[difficulty] ?? String(difficulty);
+
+  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    {
+      role: "system",
+      content:
+        "You write multiple-choice quiz questions testing the concepts covered " +
+        "in a video's transcript. Every question must be answerable purely from " +
+        "the given content, but phrase each one as a standalone knowledge " +
+        "question — never refer to \"the transcript\", \"the video\", or \"the " +
+        "instructor\". The transcript is auto-generated captions and may contain " +
+        "misheard words, typos, or garbled terms; infer the intended meaning and " +
+        "never quote garbled text in a question or option. Each question needs " +
+        "exactly one unambiguously correct answer and three plausible, clearly " +
+        "wrong distractors of similar length and specificity — don't make the " +
+        "correct option stand out by being longer or more detailed. Vary which " +
+        "option holds the correct answer across questions instead of clustering " +
+        "it at one index, and don't repeat or closely rephrase a question. " +
+        "Respond with strict JSON only, no markdown code fences.",
+    },
+    {
+      role: "user",
+      content:
+        `Transcript source material:\n\n${context}\n\n` +
+        `Write exactly ${count} multiple-choice questions at "${difficultyLabel}" ` +
+        `difficulty (${difficulty}/5, where 1 is easy recall and 5 is deep, ` +
+        `nuanced understanding). Each question needs exactly 4 options with ` +
+        `exactly one correct answer.\n\n` +
+        `Respond with JSON matching this shape exactly:\n` +
+        `{"questions": [{"question": string, "options": [string, string, string, string], "answerIndex": number}]}`,
+    },
+  ];
+
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= GENERATION_ATTEMPTS; attempt++) {
+    try {
+      const response = await openrouter.chat.completions.create({
+        model: QUESTION_MODEL,
+        response_format: { type: "json_object" },
+        messages,
+      });
+
+      const raw = response.choices[0]?.message?.content;
+      if (!raw) throw new Error("Empty response from question-generation model");
+
+      const questions = parseQuestions(raw);
+      if (questions.length === 0) {
+        throw new Error("Question-generation model returned no valid questions");
+      }
+      return questions.slice(0, count);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
 }
