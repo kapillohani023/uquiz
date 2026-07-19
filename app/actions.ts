@@ -35,9 +35,12 @@ export async function addResourceAction(
     title: title.trim() || "YouTube video",
     url: url.trim().replace(/^https?:\/\//, ""),
   });
-  // Stub pipeline: mark READY immediately with a placeholder transcript.
-  const { transcript, meta } = await fetchYoutubeTranscript(resource.url);
-  await db.markResourceReady(resource.id, transcript, meta);
+  try {
+    const { transcript, meta } = await fetchYoutubeTranscript(resource.url);
+    await db.markResourceReady(resource.id, transcript, meta);
+  } catch {
+    await db.markResourceFailed(resource.id);
+  }
   revalidatePath(`/courses/${courseId}`);
 }
 

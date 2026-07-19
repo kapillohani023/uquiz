@@ -35,6 +35,7 @@ export type ResourceRow = {
   title: string;
   url: string;
   isEnabled: boolean;
+  status: "PENDING" | "READY" | "FAILED";
   addedAt: string;
 };
 
@@ -167,6 +168,11 @@ export function CourseView({
                   <div className="mt-1 text-xs text-uq-faint">
                     {!r.isEnabled && "disabled · "}added {formatDate(r.addedAt)}
                   </div>
+                  {r.status === "FAILED" && (
+                    <UQuizBadge tone="danger" className="mt-1.5">
+                      Couldn&apos;t fetch transcript
+                    </UQuizBadge>
+                  )}
                 </div>
                 {resourceMenu(r)}
               </div>
@@ -200,6 +206,9 @@ export function CourseView({
               <UQuizBadge tone={r.isEnabled ? "success" : "muted"}>
                 {r.isEnabled ? "enabled" : "disabled"}
               </UQuizBadge>
+              {r.status === "FAILED" && (
+                <UQuizBadge tone="danger">Couldn&apos;t fetch transcript</UQuizBadge>
+              )}
               <UQuizButton
                 variant="outline"
                 size="sm"

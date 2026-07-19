@@ -22,6 +22,7 @@ export default async function CoursePage({
         title: r.title,
         url: r.url,
         isEnabled: r.isEnabled,
+        status: r.status,
         addedAt: r.createdAt.toISOString(),
       }))}
     />
