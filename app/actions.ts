@@ -60,10 +60,20 @@ export async function deleteResourceAction(courseId: string, resourceId: string)
   revalidatePath(`/courses/${courseId}`);
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(Math.round(value), min), max);
+}
+
 export async function generateQuizAction(
   courseId: string,
   settings: { questionCount: number; difficulty: number; durationMin: number },
 ) {
+  settings = {
+    questionCount: clamp(settings.questionCount, 1, 10),
+    difficulty: clamp(settings.difficulty, 1, 5),
+    durationMin: clamp(settings.durationMin, 5, 30),
+  };
+
   const userId = await requireUserId();
   const sources = await db.getGenerationSources(userId, courseId);
   const quiz = await db.createQuiz(userId, courseId, {
