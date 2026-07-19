@@ -162,6 +162,24 @@ export function markResourceReady(
   });
 }
 
+/**
+ * Store a transcript delivered by the client (browser-side caption fetch
+ * fallback), ownership-checked. An empty transcript marks the resource FAILED.
+ */
+export async function saveTranscript(
+  userId: string,
+  resourceId: string,
+  transcript: string,
+) {
+  const { count } = await prisma.resource.updateMany({
+    where: { id: resourceId, course: { userId } },
+    data: transcript
+      ? { transcript, status: "READY" }
+      : { status: "FAILED" },
+  });
+  if (count === 0) throw new NotFoundError("Resource");
+}
+
 export function markResourceFailed(resourceId: string) {
   return prisma.resource.update({
     where: { id: resourceId },

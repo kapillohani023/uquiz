@@ -24,9 +24,10 @@ import {
   cx,
 } from "@/components/ui";
 import { difficultyLabel, formatDate, pluralize } from "@/lib/format";
-import { extractYoutubeVideoId } from "@/lib/youtube";
+import { extractYoutubeVideoId, parseTimedTextXml } from "@/lib/youtube";
 import {
   addResourceAction,
+  completeTranscriptAction,
   deleteResourceAction,
   generateQuizAction,
   setResourceEnabledAction,
@@ -107,9 +108,21 @@ export function CourseView({
       const result = await addResourceAction(course.id, url, title);
       if (result?.error) {
         setUrlError(result.error);
-      } else {
-        setDialog(null);
+        return;
       }
+      if (result?.captionUrl && result.resourceId) {
+        // Server couldn't download the captions (blocked IP) — fetch them
+        // here in the browser and hand the text back.
+        let transcript = "";
+        try {
+          const res = await fetch(result.captionUrl);
+          if (res.ok) transcript = parseTimedTextXml(await res.text());
+        } catch {
+          // Leave transcript empty; the action marks the resource FAILED.
+        }
+        await completeTranscriptAction(course.id, result.resourceId, transcript);
+      }
+      setDialog(null);
     });
   };
 

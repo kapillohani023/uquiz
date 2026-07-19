@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/app/auth";
 import * as db from "@/lib/db";
 import {
-  fetchYoutubeTranscript,
+  downloadCaptionTrack,
+  fetchCaptionTrackUrl,
   fetchYoutubeVideoMeta,
   generateQuestions,
 } from "@/lib/services";
@@ -34,7 +35,7 @@ export async function addResourceAction(
   courseId: string,
   url: string,
   title: string,
-): Promise<{ error?: string }> {
+): Promise<{ error?: string; resourceId?: string; captionUrl?: string }> {
   const userId = await requireUserId();
 
   const videoId = extractYoutubeVideoId(url);
@@ -57,14 +58,43 @@ export async function addResourceAction(
     url: url.trim().replace(/^https?:\/\//, ""),
     meta: videoMeta,
   });
+
+  let trackUrl: string | null = null;
   try {
-    const { transcript } = await fetchYoutubeTranscript(resource.url);
-    await db.markResourceReady(resource.id, transcript);
-  } catch {
+    trackUrl = await fetchCaptionTrackUrl(resource.url);
+  } catch (error) {
+    console.error(`Caption lookup failed for ${resource.url}:`, error);
     await db.markResourceFailed(resource.id);
   }
+
+  if (trackUrl) {
+    try {
+      const transcript = await downloadCaptionTrack(trackUrl);
+      await db.markResourceReady(resource.id, transcript);
+    } catch (error) {
+      // Server IP blocked from downloading captions (e.g. on Vercel) — hand
+      // the signed, CORS-enabled track URL to the browser to fetch instead.
+      console.error(`Server caption download failed for ${resource.url}:`, error);
+      return { resourceId: resource.id, captionUrl: trackUrl };
+    }
+  }
+
   revalidatePath(`/courses/${courseId}`);
   return {};
+}
+
+/**
+ * Completes the browser-side caption fetch fallback: stores the transcript
+ * the client downloaded, or marks the resource FAILED when empty.
+ */
+export async function completeTranscriptAction(
+  courseId: string,
+  resourceId: string,
+  transcript: string,
+) {
+  const userId = await requireUserId();
+  await db.saveTranscript(userId, resourceId, transcript.trim());
+  revalidatePath(`/courses/${courseId}`);
 }
 
 export async function setResourceEnabledAction(

@@ -1,8 +1,11 @@
 import type { Resource } from "@prisma/client";
 import OpenAI from "openai";
-import { YoutubeTranscript } from "youtube-transcript";
 import { DIFFICULTY_LABELS } from "@/lib/format";
-import { extractYoutubeVideoId, type YoutubeVideoMeta } from "@/lib/youtube";
+import {
+  extractYoutubeVideoId,
+  parseTimedTextXml,
+  type YoutubeVideoMeta,
+} from "@/lib/youtube";
 import type { GeneratedQuestion } from "@/lib/db";
 
 function extractVideoId(url: string): string {
@@ -54,22 +57,81 @@ export async function fetchYoutubeVideoMeta(
   };
 }
 
-export async function fetchYoutubeTranscript(
-  url: string,
-): Promise<{ transcript: string; meta: { sourceUrl: string; videoId: string } }> {
-  const videoId = extractVideoId(url);
-  const segments = await YoutubeTranscript.fetchTranscript(videoId);
-  console.log(`Fetched ${segments.length} transcript segments for video ${videoId}`);
+/**
+ * YouTube's internal player API, called as the Android app. Unlike watch-page
+ * scraping (and the WEB client), the ANDROID client is not walled off from
+ * datacenter IPs, which is what breaks transcript fetching on Vercel.
+ */
+const INNERTUBE_PLAYER_URL = "https://www.youtube.com/youtubei/v1/player";
+const INNERTUBE_ANDROID_CONTEXT = {
+  client: {
+    clientName: "ANDROID",
+    clientVersion: "20.10.38",
+    androidSdkVersion: 30,
+    hl: "en",
+  },
+};
+const INNERTUBE_ANDROID_USER_AGENT =
+  "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip";
 
-  const lines = segments.map((s) => s.text.trim()).filter((line) => line.length > 0);
-  if (lines.length === 0) {
-    throw new Error(`No captions available for video ${videoId}`);
+type CaptionTrack = { baseUrl: string; languageCode: string; kind?: string };
+
+/**
+ * Signed, short-lived URL of the video's best caption track (English and
+ * manually-authored preferred). The URL is CORS-enabled, so it can be
+ * downloaded by the browser as well as the server.
+ */
+export async function fetchCaptionTrackUrl(url: string): Promise<string> {
+  const videoId = extractVideoId(url);
+  const response = await fetch(INNERTUBE_PLAYER_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "User-Agent": INNERTUBE_ANDROID_USER_AGENT,
+    },
+    body: JSON.stringify({ context: INNERTUBE_ANDROID_CONTEXT, videoId }),
+  });
+  if (!response.ok) {
+    throw new Error(`InnerTube player request failed with status ${response.status}`);
   }
 
-  return {
-    transcript: lines.join(" "),
-    meta: { sourceUrl: url, videoId },
+  const data = (await response.json()) as {
+    playabilityStatus?: { status?: string };
+    captions?: {
+      playerCaptionsTracklistRenderer?: { captionTracks?: CaptionTrack[] };
+    };
   };
+  const tracks =
+    data.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
+  if (tracks.length === 0) {
+    throw new Error(
+      `No captions available for video ${videoId} ` +
+        `(playability: ${data.playabilityStatus?.status ?? "unknown"})`,
+    );
+  }
+
+  const isEnglish = (t: CaptionTrack) => t.languageCode.startsWith("en");
+  const track =
+    tracks.find((t) => isEnglish(t) && t.kind !== "asr") ??
+    tracks.find(isEnglish) ??
+    tracks[0];
+  return track.baseUrl;
+}
+
+export async function downloadCaptionTrack(trackUrl: string): Promise<string> {
+  const response = await fetch(trackUrl);
+  if (!response.ok) {
+    throw new Error(`Caption download failed with status ${response.status}`);
+  }
+  const transcript = parseTimedTextXml(await response.text());
+  if (transcript.length === 0) {
+    throw new Error("Caption track parsed to an empty transcript");
+  }
+  return transcript;
+}
+
+export async function fetchYoutubeTranscript(url: string): Promise<string> {
+  return downloadCaptionTrack(await fetchCaptionTrackUrl(url));
 }
 
 const openrouter = new OpenAI({
