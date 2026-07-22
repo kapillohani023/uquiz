@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { LayoutGrid, List as ListIcon } from "lucide-react";
 import {
   UQuizActionBar,
   UQuizBackLink,
@@ -59,8 +60,8 @@ type GeneratedQuiz = {
 };
 
 const viewOptions = [
-  { value: "grid", label: "Grid" },
-  { value: "list", label: "List" },
+  { value: "grid", label: "Grid", icon: LayoutGrid },
+  { value: "list", label: "List", icon: ListIcon },
 ] as const;
 
 export function CourseView({
@@ -164,6 +165,10 @@ export function CourseView({
       <UQuizMenu
         items={[
           {
+            label: "Copy link",
+            onSelect: () => navigator.clipboard.writeText(r.url),
+          },
+          {
             label: r.isEnabled ? "Disable" : "Enable",
             onSelect: () =>
               mutateResource(r.id, () =>
@@ -233,11 +238,11 @@ export function CourseView({
               </button>
               <div className="flex items-start gap-2 px-4 pt-3.5 pb-4">
                 <div className={cx("min-w-0 flex-1", !r.isEnabled && "opacity-45")}>
-                  <div className="text-sm leading-snug font-semibold">
+                  <div className="truncate text-sm leading-snug font-semibold">
                     {r.title}
                   </div>
                   <div className="mt-1 text-xs text-uq-faint">
-                    {!r.isEnabled && "disabled · "}added {formatDate(r.addedAt)}
+                    added {formatDate(r.addedAt)}
                   </div>
                   {r.status === "FAILED" && (
                     <UQuizBadge tone="danger" className="mt-1.5">
@@ -278,8 +283,8 @@ export function CourseView({
                 />
               </button>
               <div className={cx("min-w-0 flex-1", !r.isEnabled && "opacity-45")}>
-                <div className="text-sm font-semibold">{r.title}</div>
-                <div className="text-xs text-uq-faint">{r.url}</div>
+                <div className="truncate text-sm font-semibold">{r.title}</div>
+                <div className="truncate text-xs text-uq-faint">{r.url}</div>
               </div>
               <div
                 className={cx(
@@ -289,9 +294,6 @@ export function CourseView({
               >
                 added {formatDate(r.addedAt)}
               </div>
-              <UQuizBadge tone={r.isEnabled ? "success" : "muted"}>
-                {r.isEnabled ? "enabled" : "disabled"}
-              </UQuizBadge>
               {r.status === "FAILED" && (
                 <UQuizBadge tone="danger">Couldn&apos;t fetch transcript</UQuizBadge>
               )}
@@ -301,36 +303,7 @@ export function CourseView({
                   Fetching transcript…
                 </UQuizBadge>
               )}
-              {pendingResourceId === r.id ? (
-                <UQuizSpinner size="sm" />
-              ) : (
-                <>
-                  <UQuizButton
-                    variant="outline"
-                    size="sm"
-                    disabled={isPending}
-                    onClick={() =>
-                      mutateResource(r.id, () =>
-                        setResourceEnabledAction(course.id, r.id, !r.isEnabled),
-                      )
-                    }
-                  >
-                    {r.isEnabled ? "Disable" : "Enable"}
-                  </UQuizButton>
-                  <UQuizButton
-                    variant="danger"
-                    size="sm"
-                    disabled={isPending}
-                    onClick={() =>
-                      mutateResource(r.id, () =>
-                        deleteResourceAction(course.id, r.id),
-                      )
-                    }
-                  >
-                    Delete
-                  </UQuizButton>
-                </>
-              )}
+              {resourceMenu(r)}
             </UQuizCard>
           ))}
         </div>

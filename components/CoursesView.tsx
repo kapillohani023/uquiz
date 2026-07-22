@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { LayoutGrid, List } from "lucide-react";
 import {
   UQuizBadge,
   UQuizButton,
@@ -29,8 +30,8 @@ export type CourseRow = {
 };
 
 const viewOptions = [
-  { value: "grid", label: "Grid" },
-  { value: "list", label: "List" },
+  { value: "grid", label: "Grid", icon: LayoutGrid },
+  { value: "list", label: "List", icon: List },
 ] as const;
 
 export function CoursesView({ courses }: { courses: CourseRow[] }) {
