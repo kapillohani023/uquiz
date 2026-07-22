@@ -1,20 +1,19 @@
-/*
-  Warnings:
-
-  - Added the required column `updatedAt` to the `User` table without a default value. This is not possible if the table is not empty.
-
-*/
 -- CreateEnum
 CREATE TYPE "ResourceStatus" AS ENUM ('PENDING', 'READY', 'FAILED');
 
 -- CreateEnum
 CREATE TYPE "QuizStatus" AS ENUM ('GENERATING', 'READY', 'FAILED');
 
--- DropIndex
-DROP INDEX "User_email_idx";
+-- CreateTable
+CREATE TABLE "User" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
--- AlterTable
-ALTER TABLE "User" ADD COLUMN     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "Course" (
@@ -81,6 +80,9 @@ CREATE TABLE "QuizAttempt" (
 
     CONSTRAINT "QuizAttempt_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
 CREATE INDEX "Course_userId_idx" ON "Course"("userId");
