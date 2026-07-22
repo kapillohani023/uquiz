@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/app/auth";
 import { getCourse } from "@/lib/db";
-import { CourseView } from "./CourseView";
+import { CourseView } from "@/components/CourseView";
 
 export default async function CoursePage({
   params,

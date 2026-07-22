@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/app/auth";
 import { getQuiz } from "@/lib/db";
-import { TakeQuizView } from "./TakeQuizView";
+import { TakeQuizView } from "@/components/TakeQuizView";
 
 export default async function TakeQuizPage({
   params,

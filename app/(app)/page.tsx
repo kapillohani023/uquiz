@@ -1,6 +1,6 @@
 import { auth } from "@/app/auth";
 import { listCourses } from "@/lib/db";
-import { CoursesView } from "./CoursesView";
+import { CoursesView } from "@/components/CoursesView";
 
 export default async function HomePage() {
   const session = await auth();

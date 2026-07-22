@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LegalArticle, LegalSection } from "../LegalArticle";
+import { LegalArticle, LegalSection } from "@/components/LegalArticle";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — uquiz",
