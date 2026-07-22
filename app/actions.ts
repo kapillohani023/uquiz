@@ -1,15 +1,30 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/app/auth";
 import * as db from "@/lib/db";
-import {
-  downloadCaptionTrack,
-  fetchCaptionTrackUrl,
-  fetchYoutubeVideoMeta,
-  generateQuestions,
-} from "@/lib/services";
+import { fetchYoutubeVideoMeta } from "@/lib/services";
 import { extractYoutubeVideoId } from "@/lib/youtube";
+import { generateQuizQuestions } from "@/lib/agents/generateQuiz";
+import { runYoutubeTranscriptAgent } from "@/lib/agents/transcriptAgent";
+
+const MAX_VIDEO_DURATION_SECONDS = 90 * 60;
+
+/**
+ * Fetches and distills the transcript for a resource in the background
+ * (scheduled via `after`, so it runs after the response is sent), then
+ * flips the resource to READY or FAILED.
+ */
+async function runTranscriptAgentAndSave(resourceId: string, url: string) {
+  try {
+    const transcript = await runYoutubeTranscriptAgent(url);
+    await db.markResourceReady(resourceId, transcript);
+  } catch (error) {
+    console.error(`Transcript agent failed for resource ${resourceId}:`, error);
+    await db.markResourceFailed(resourceId);
+  }
+}
 
 async function requireUserId() {
   const session = await auth();
@@ -35,7 +50,7 @@ export async function addResourceAction(
   courseId: string,
   url: string,
   title: string,
-): Promise<{ error?: string; resourceId?: string; captionUrl?: string }> {
+): Promise<{ error?: string; resourceId?: string }> {
   const userId = await requireUserId();
 
   const videoId = extractYoutubeVideoId(url);
@@ -52,6 +67,9 @@ export async function addResourceAction(
   if (!videoMeta) {
     return { error: "No YouTube video exists at that URL." };
   }
+  if (videoMeta.durationSeconds > MAX_VIDEO_DURATION_SECONDS) {
+    return { error: "That video is longer than 90 minutes — pick a shorter one." };
+  }
 
   const resource = await db.addResource(userId, courseId, {
     title: title.trim() || videoMeta.title,
@@ -59,42 +77,11 @@ export async function addResourceAction(
     meta: videoMeta,
   });
 
-  let trackUrl: string | null = null;
-  try {
-    trackUrl = await fetchCaptionTrackUrl(resource.url);
-  } catch (error) {
-    console.error(`Caption lookup failed for ${resource.url}:`, error);
-    await db.markResourceFailed(resource.id);
-  }
-
-  if (trackUrl) {
-    try {
-      const transcript = await downloadCaptionTrack(trackUrl);
-      await db.markResourceReady(resource.id, transcript);
-    } catch (error) {
-      // Server IP blocked from downloading captions (e.g. on Vercel) — hand
-      // the signed, CORS-enabled track URL to the browser to fetch instead.
-      console.error(`Server caption download failed for ${resource.url}:`, error);
-      return { resourceId: resource.id, captionUrl: trackUrl };
-    }
-  }
+  const fullUrl = `https://${resource.url}`;
+  after(() => runTranscriptAgentAndSave(resource.id, fullUrl));
 
   revalidatePath(`/courses/${courseId}`);
-  return {};
-}
-
-/**
- * Completes the browser-side caption fetch fallback: stores the transcript
- * the client downloaded, or marks the resource FAILED when empty.
- */
-export async function completeTranscriptAction(
-  courseId: string,
-  resourceId: string,
-  transcript: string,
-) {
-  const userId = await requireUserId();
-  await db.saveTranscript(userId, resourceId, transcript.trim());
-  revalidatePath(`/courses/${courseId}`);
+  return { resourceId: resource.id };
 }
 
 export async function setResourceEnabledAction(
@@ -120,7 +107,14 @@ function clamp(value: number, min: number, max: number) {
 export async function generateQuizAction(
   courseId: string,
   settings: { questionCount: number; difficulty: number; durationMin: number },
-) {
+): Promise<{
+  error?: string;
+  id?: string;
+  name?: string;
+  questionCount?: number;
+  difficulty?: number;
+  durationMin?: number;
+}> {
   settings = {
     questionCount: clamp(settings.questionCount, 1, 10),
     difficulty: clamp(settings.difficulty, 1, 5),
@@ -129,27 +123,31 @@ export async function generateQuizAction(
 
   const userId = await requireUserId();
   const sources = await db.getGenerationSources(userId, courseId);
-  const quiz = await db.createQuiz(userId, courseId, {
-    difficulty: settings.difficulty,
-    durationMin: settings.durationMin,
-  });
+
+  let questions;
   try {
-    const questions = await generateQuestions(
+    questions = await generateQuizQuestions(
       sources,
       settings.questionCount,
       settings.difficulty,
     );
-    await db.finalizeQuiz(quiz.id, questions);
-  } catch {
-    await db.markQuizFailed(quiz.id);
-    throw new Error("Quiz generation failed");
+  } catch (error) {
+    console.error(`Quiz generation failed for course ${courseId}:`, error);
+    return { error: "Couldn't generate a quiz right now. Try again in a bit." };
   }
+
+  const quiz = await db.createReadyQuiz(
+    userId,
+    courseId,
+    { difficulty: settings.difficulty, durationMin: settings.durationMin },
+    questions,
+  );
   revalidatePath(`/courses/${courseId}`);
   revalidatePath("/quizzes");
   return {
     id: quiz.id,
     name: quiz.name,
-    questionCount: settings.questionCount,
+    questionCount: questions.length,
     difficulty: settings.difficulty,
     durationMin: settings.durationMin,
   };

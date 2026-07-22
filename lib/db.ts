@@ -199,14 +199,23 @@ export function getGenerationSources(userId: string, courseId: string) {
 // Quizzes
 // ---------------------------------------------------------------------------
 
+export type GeneratedQuestion = {
+  question: string;
+  options: string[];
+  answerIndex: number;
+};
+
 /**
- * Create a quiz shell in GENERATING state with an auto-numbered name
- * ("<Course> Quiz #n"). Questions are attached by finalizeQuiz.
+ * Create a quiz with its questions already attached, in one atomic write.
+ * Called only once question generation has already succeeded — a quiz that
+ * fails to generate is never persisted, so there's no GENERATING/FAILED
+ * shell row to clean up.
  */
-export async function createQuiz(
+export async function createReadyQuiz(
   userId: string,
   courseId: string,
   settings: { difficulty: number; durationMin: number },
+  questions: GeneratedQuestion[],
 ) {
   const course = await prisma.course.findFirst({
     where: { id: courseId, userId },
@@ -217,31 +226,10 @@ export async function createQuiz(
     data: {
       ...settings,
       courseId,
+      status: "READY",
       name: `${course.name} Quiz #${course._count.quizzes + 1}`,
+      mcqs: { create: questions.map((q, order) => ({ ...q, order })) },
     },
-  });
-}
-
-export type GeneratedQuestion = {
-  question: string;
-  options: string[];
-  answerIndex: number;
-};
-
-/** Attach generated questions and flip the quiz to READY, atomically. */
-export function finalizeQuiz(quizId: string, questions: GeneratedQuestion[]) {
-  return prisma.$transaction([
-    prisma.mcq.createMany({
-      data: questions.map((q, order) => ({ ...q, order, quizId })),
-    }),
-    prisma.quiz.update({ where: { id: quizId }, data: { status: "READY" } }),
-  ]);
-}
-
-export function markQuizFailed(quizId: string) {
-  return prisma.quiz.update({
-    where: { id: quizId },
-    data: { status: "FAILED" },
   });
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   UQuizActionBar,
@@ -24,10 +24,9 @@ import {
   cx,
 } from "@/components/ui";
 import { difficultyLabel, formatDate, pluralize } from "@/lib/format";
-import { extractYoutubeVideoId, parseTimedTextXml } from "@/lib/youtube";
+import { extractYoutubeVideoId } from "@/lib/youtube";
 import {
   addResourceAction,
-  completeTranscriptAction,
   deleteResourceAction,
   generateQuizAction,
   setResourceEnabledAction,
@@ -43,7 +42,7 @@ export type ResourceRow = {
   thumbnailUrl: string | null;
 };
 
-type Dialog = null | "addResource" | "createQuiz" | "generated";
+type Dialog = null | "addResource" | "createQuiz" | "generated" | "generationError";
 
 type GeneratedQuiz = {
   id: string;
@@ -78,6 +77,7 @@ export function CourseView({
   const [durationMin, setDurationMin] = useState(10);
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState<GeneratedQuiz | null>(null);
+  const [generationError, setGenerationError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const [pendingResourceId, setPendingResourceId] = useState<string | null>(null);
@@ -86,6 +86,13 @@ export function CourseView({
   const readySourceCount = resources.filter(
     (r) => r.isEnabled && r.status === "READY",
   ).length;
+  const hasPendingResource = resources.some((r) => r.status === "PENDING");
+
+  useEffect(() => {
+    if (!hasPendingResource) return;
+    const interval = setInterval(() => router.refresh(), 3000);
+    return () => clearInterval(interval);
+  }, [hasPendingResource, router]);
 
   const mutateResource = (resourceId: string, action: () => Promise<void>) => {
     setPendingResourceId(resourceId);
@@ -110,18 +117,6 @@ export function CourseView({
         setUrlError(result.error);
         return;
       }
-      if (result?.captionUrl && result.resourceId) {
-        // Server couldn't download the captions (blocked IP) — fetch them
-        // here in the browser and hand the text back.
-        let transcript = "";
-        try {
-          const res = await fetch(result.captionUrl);
-          if (res.ok) transcript = parseTimedTextXml(await res.text());
-        } catch {
-          // Leave transcript empty; the action marks the resource FAILED.
-        }
-        await completeTranscriptAction(course.id, result.resourceId, transcript);
-      }
       setDialog(null);
     });
   };
@@ -130,12 +125,17 @@ export function CourseView({
     setDialog(null);
     setGenerating(true);
     try {
-      const quiz = await generateQuizAction(course.id, {
+      const result = await generateQuizAction(course.id, {
         questionCount,
         difficulty,
         durationMin,
       });
-      setGenerated(quiz);
+      if (result.error) {
+        setGenerationError(result.error);
+        setDialog("generationError");
+        return;
+      }
+      setGenerated(result as GeneratedQuiz);
       setDialog("generated");
     } finally {
       setGenerating(false);
@@ -222,6 +222,12 @@ export function CourseView({
                       Couldn&apos;t fetch transcript
                     </UQuizBadge>
                   )}
+                  {r.status === "PENDING" && (
+                    <UQuizBadge tone="warning" className="mt-1.5 gap-1.5">
+                      <UQuizSpinner size="sm" className="size-3 border-[1.5px]" />
+                      Fetching transcript…
+                    </UQuizBadge>
+                  )}
                 </div>
                 {resourceMenu(r)}
               </div>
@@ -259,6 +265,12 @@ export function CourseView({
               </UQuizBadge>
               {r.status === "FAILED" && (
                 <UQuizBadge tone="danger">Couldn&apos;t fetch transcript</UQuizBadge>
+              )}
+              {r.status === "PENDING" && (
+                <UQuizBadge tone="warning" className="gap-1.5">
+                  <UQuizSpinner size="sm" className="size-3 border-[1.5px]" />
+                  Fetching transcript…
+                </UQuizBadge>
               )}
               {pendingResourceId === r.id ? (
                 <UQuizSpinner size="sm" />
@@ -456,9 +468,28 @@ export function CourseView({
         </div>
       </UQuizDialog>
 
+      <UQuizDialog
+        open={dialog === "generationError"}
+        onClose={() => setDialog(null)}
+      >
+        <div className="text-center">
+          <h2 className="text-[19px] font-bold tracking-[-0.3px]">
+            Couldn&apos;t generate a quiz
+          </h2>
+          <p className="mt-1.5 text-[13px] text-uq-muted">
+            {generationError ?? "Something went wrong. Try again later."}
+          </p>
+          <UQuizDialogActions align="center">
+            <UQuizButton variant="primary" size="action" onClick={() => setDialog(null)}>
+              Okay
+            </UQuizButton>
+          </UQuizDialogActions>
+        </div>
+      </UQuizDialog>
+
       {generating && (
         <UQuizGeneratingOverlay
-          subtitle={`AI is working through ${enabledCount} ${enabledCount === 1 ? "video" : "videos"} in ${course.name}`}
+          subtitle={`Working with ${enabledCount} ${enabledCount === 1 ? "video" : "videos"} in ${course.name}`}
         />
       )}
     </UQuizPage>

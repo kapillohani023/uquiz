@@ -6,32 +6,6 @@ export function extractYoutubeVideoId(url: string): string | null {
   return url.match(YOUTUBE_ID_PATTERN)?.[1] ?? null;
 }
 
-function decodeXmlEntities(text: string): string {
-  return text
-    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, code) =>
-      String.fromCodePoint(parseInt(code, 16)),
-    )
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&");
-}
-
-/**
- * Flatten a YouTube timedtext XML caption document into plain text.
- * Runs on both server and client (regex-based, no DOM), since the caption
- * file may be downloaded by either side.
- */
-export function parseTimedTextXml(xml: string): string {
-  return [...xml.matchAll(/<(?:p|text)[^>]*>([\s\S]*?)<\/(?:p|text)>/g)]
-    .map((m) => decodeXmlEntities(m[1].replace(/<[^>]+>/g, "")))
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 /** Snippet fields we keep on Resource.meta. */
 export type YoutubeVideoMeta = {
   videoId: string;
@@ -39,4 +13,18 @@ export type YoutubeVideoMeta = {
   channelTitle: string;
   thumbnailUrl: string | null;
   publishedAt: string;
+  durationSeconds: number;
 };
+
+const ISO8601_DURATION_PATTERN =
+  /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/;
+
+/** Seconds encoded by a YouTube Data API ISO 8601 duration (e.g. `PT1H30M`). */
+export function parseIso8601Duration(duration: string): number {
+  const match = duration.match(ISO8601_DURATION_PATTERN);
+  if (!match) return 0;
+  const [, hours, minutes, seconds] = match;
+  return (
+    Number(hours ?? 0) * 3600 + Number(minutes ?? 0) * 60 + Number(seconds ?? 0)
+  );
+}

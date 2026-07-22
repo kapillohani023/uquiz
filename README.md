@@ -9,8 +9,9 @@ and get scored instantly.
 
 - **Courses** — group YouTube resources by subject and toggle which ones feed
   into quiz generation.
-- **AI-generated quizzes** — transcripts are sent to an LLM (via OpenRouter)
-  to produce multiple-choice questions at a configurable difficulty.
+- **AI-generated quizzes** — transcripts are sent to an LLM (via Google ADK
+  and Gemini) to produce multiple-choice questions at a configurable
+  difficulty.
 - **Timed quiz-taking** — take a generated quiz against a countdown timer and
   see a scored results screen.
 - **Google sign-in** — authentication via NextAuth (Auth.js) with Google
@@ -19,7 +20,7 @@ and get scored instantly.
 ## Tech stack
 
 Next.js (App Router) · React · TypeScript · Tailwind CSS · Prisma ·
-PostgreSQL · NextAuth (Auth.js) · OpenRouter · Bun
+PostgreSQL · NextAuth (Auth.js) · Google ADK / Gemini · Bun
 
 ## Getting Started
 
@@ -68,7 +69,7 @@ cp .env.example .env
 - `DATABASE_URL` — connection string for the database from step 2.
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — from a [Google Cloud OAuth client](https://console.cloud.google.com/apis/credentials) with `http://localhost:3000/api/auth/callback/google` as an authorized redirect URI.
 - `NEXTAUTH_SECRET` — any random string (generate one with `openssl rand -base64 32`).
-- `OPENROUTER_API_KEY` — API key from [OpenRouter](https://openrouter.ai/keys), used to generate quiz questions.
+- `GEMINI_API_KEY` — API key from [Google AI Studio](https://aistudio.google.com/apikey), used by the Google ADK / Gemini pipeline to fetch transcripts and generate quiz questions.
 
 ### 4. Run the dev server
 
