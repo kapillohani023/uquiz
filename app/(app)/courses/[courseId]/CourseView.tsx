@@ -42,7 +42,13 @@ export type ResourceRow = {
   thumbnailUrl: string | null;
 };
 
-type Dialog = null | "addResource" | "createQuiz" | "generated" | "generationError";
+type Dialog =
+  | null
+  | "addResource"
+  | "createQuiz"
+  | "generated"
+  | "generationError"
+  | "watchVideo";
 
 type GeneratedQuiz = {
   id: string;
@@ -81,6 +87,15 @@ export function CourseView({
   const [isPending, startTransition] = useTransition();
 
   const [pendingResourceId, setPendingResourceId] = useState<string | null>(null);
+  const [watchingResource, setWatchingResource] = useState<ResourceRow | null>(null);
+
+  const watchVideo = (r: ResourceRow) => {
+    setWatchingResource(r);
+    setDialog("watchVideo");
+  };
+  const watchingVideoId = watchingResource
+    ? extractYoutubeVideoId(watchingResource.url)
+    : null;
 
   const enabledCount = resources.filter((r) => r.isEnabled).length;
   const readySourceCount = resources.filter(
@@ -204,11 +219,18 @@ export function CourseView({
         <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-[18px]">
           {resources.map((r) => (
             <UQuizCard key={r.id} padding="none">
-              <UQuizVideoThumb
-                src={r.thumbnailUrl}
-                alt={r.title}
-                className={cx(!r.isEnabled && "opacity-45")}
-              />
+              <button
+                type="button"
+                onClick={() => watchVideo(r)}
+                className="block w-full cursor-pointer"
+                aria-label={`Watch ${r.title}`}
+              >
+                <UQuizVideoThumb
+                  src={r.thumbnailUrl}
+                  alt={r.title}
+                  className={cx(!r.isEnabled && "opacity-45")}
+                />
+              </button>
               <div className="flex items-start gap-2 px-4 pt-3.5 pb-4">
                 <div className={cx("min-w-0 flex-1", !r.isEnabled && "opacity-45")}>
                   <div className="text-sm leading-snug font-semibold">
@@ -242,12 +264,19 @@ export function CourseView({
               padding="none"
               className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl px-[18px] py-3"
             >
-              <UQuizVideoThumb
-                variant="row"
-                src={r.thumbnailUrl}
-                alt={r.title}
-                className={cx(!r.isEnabled && "opacity-45")}
-              />
+              <button
+                type="button"
+                onClick={() => watchVideo(r)}
+                className="cursor-pointer"
+                aria-label={`Watch ${r.title}`}
+              >
+                <UQuizVideoThumb
+                  variant="row"
+                  src={r.thumbnailUrl}
+                  alt={r.title}
+                  className={cx(!r.isEnabled && "opacity-45")}
+                />
+              </button>
               <div className={cx("min-w-0 flex-1", !r.isEnabled && "opacity-45")}>
                 <div className="text-sm font-semibold">{r.title}</div>
                 <div className="text-xs text-uq-faint">{r.url}</div>
@@ -484,6 +513,25 @@ export function CourseView({
               Okay
             </UQuizButton>
           </UQuizDialogActions>
+        </div>
+      </UQuizDialog>
+
+      <UQuizDialog
+        open={dialog === "watchVideo"}
+        onClose={() => setDialog(null)}
+        size="video"
+      >
+        <div className="aspect-video w-full overflow-hidden rounded-xl bg-black">
+          {watchingVideoId && (
+            <iframe
+              key={watchingVideoId}
+              className="size-full"
+              src={`https://www.youtube.com/embed/${watchingVideoId}?autoplay=1`}
+              title={watchingResource?.title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          )}
         </div>
       </UQuizDialog>
 

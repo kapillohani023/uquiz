@@ -7,6 +7,11 @@ import { cx } from "./UQuizUtils";
  * Centered modal over a dimmed backdrop. Controlled: render nothing when closed.
  * Clicking the backdrop calls onClose; clicks inside the panel are contained.
  */
+const sizeClasses = {
+  default: "max-w-[420px] p-6 sm:p-8",
+  video: "max-w-[720px] p-3",
+} as const;
+
 export function UQuizDialog({
   open,
   onClose,
@@ -15,6 +20,7 @@ export function UQuizDialog({
   description,
   children,
   className,
+  size = "default",
 }: {
   open: boolean;
   onClose: () => void;
@@ -24,6 +30,8 @@ export function UQuizDialog({
   description?: string;
   children: ReactNode;
   className?: string;
+  /** `video` widens the panel and tightens padding for edge-to-edge embeds. */
+  size?: "default" | "video";
 }) {
   if (!open) return null;
 
@@ -38,7 +46,8 @@ export function UQuizDialog({
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
         className={cx(
-          "w-full max-w-[420px] rounded-2xl bg-uq-surface p-6 shadow-[0_20px_60px_rgba(28,25,23,0.25)] sm:p-8",
+          "w-full rounded-2xl bg-uq-surface shadow-[0_20px_60px_rgba(28,25,23,0.25)]",
+          sizeClasses[size],
           className,
         )}
       >
