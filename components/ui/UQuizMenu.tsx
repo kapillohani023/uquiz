@@ -17,12 +17,15 @@ export function UQuizMenu({
   trigger,
   align = "right",
   className,
+  dropdownTop = "top-7",
 }: {
   items: UQuizMenuItem[];
   /** Custom trigger content; defaults to the ⋯ glyph. */
   trigger?: ReactNode;
   align?: "left" | "right";
   className?: string;
+  /** Vertical offset class for the dropdown panel; override when the trigger sits close to other content. */
+  dropdownTop?: string;
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -63,7 +66,8 @@ export function UQuizMenu({
         <div
           role="menu"
           className={cx(
-            "absolute top-7 z-10 flex min-w-[140px] flex-col rounded-[10px] border border-uq-border-strong bg-white p-1 shadow-[0_6px_20px_rgba(28,25,23,0.12)]",
+            "absolute z-10 flex min-w-[140px] flex-col rounded-[10px] border border-uq-border-strong bg-white p-1 shadow-[0_6px_20px_rgba(28,25,23,0.12)]",
+            dropdownTop,
             align === "right" ? "right-0" : "left-0",
           )}
         >

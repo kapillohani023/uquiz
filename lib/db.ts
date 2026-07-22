@@ -40,6 +40,11 @@ export function ensureUser(email: string, name: string) {
   });
 }
 
+/** Deletes the user and, via cascade, every course/resource/quiz/attempt they own. */
+export async function deleteUser(userId: string) {
+  await prisma.user.delete({ where: { id: userId } });
+}
+
 // ---------------------------------------------------------------------------
 // Courses
 // ---------------------------------------------------------------------------

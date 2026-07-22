@@ -11,13 +11,14 @@ import {
   UQuizDialog,
   UQuizDialogActions,
   UQuizInput,
+  UQuizMenu,
   UQuizPage,
   UQuizPageHeader,
   UQuizViewToggle,
   uquizScoreTone,
 } from "@/components/ui";
 import { pluralize } from "@/lib/format";
-import { createCourseAction } from "@/app/actions";
+import { createCourseAction, deleteCourseAction } from "@/app/actions";
 
 export type CourseRow = {
   id: string;
@@ -38,6 +39,8 @@ export function CoursesView({ courses }: { courses: CourseRow[] }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [name, setName] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [deleteTarget, setDeleteTarget] = useState<CourseRow | null>(null);
+  const [isDeletePending, startDeleteTransition] = useTransition();
 
   const create = () => {
     if (!name.trim() || isPending) return;
@@ -47,6 +50,18 @@ export function CoursesView({ courses }: { courses: CourseRow[] }) {
       router.push(`/courses/${id}`);
     });
   };
+
+  const confirmDelete = () => {
+    if (!deleteTarget || isDeletePending) return;
+    startDeleteTransition(async () => {
+      await deleteCourseAction(deleteTarget.id);
+      setDeleteTarget(null);
+    });
+  };
+
+  const deleteMenu = (c: CourseRow) => (
+    <UQuizMenu items={[{ label: "Delete", danger: true, onSelect: () => setDeleteTarget(c) }]} />
+  );
 
   const avgBadge = (c: CourseRow) => (
     <UQuizBadge chip tone={uquizScoreTone(c.avgScore)}>
@@ -86,13 +101,16 @@ export function CoursesView({ courses }: { courses: CourseRow[] }) {
               onClick={() => router.push(`/courses/${c.id}`)}
               className="flex min-h-[150px] flex-col justify-between"
             >
-              <div>
-                <div className="text-[17px] font-semibold tracking-[-0.2px]">
-                  {c.name}
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="text-[17px] font-semibold tracking-[-0.2px]">
+                    {c.name}
+                  </div>
+                  <div className="mt-1.5 text-[13px] text-uq-faint">
+                    {pluralize(c.resourceCount, "resource")}
+                  </div>
                 </div>
-                <div className="mt-1.5 text-[13px] text-uq-faint">
-                  {pluralize(c.resourceCount, "resource")}
-                </div>
+                {deleteMenu(c)}
               </div>
               <div className="flex items-center gap-3.5 text-[13px] text-uq-muted">
                 {quizLink(c)}
@@ -117,6 +135,7 @@ export function CoursesView({ courses }: { courses: CourseRow[] }) {
               </div>
               {quizLink(c)}
               {avgBadge(c)}
+              {deleteMenu(c)}
             </UQuizCard>
           ))}
           <UQuizDashedButton onClick={() => setDialogOpen(true)}>
@@ -149,6 +168,35 @@ export function CoursesView({ courses }: { courses: CourseRow[] }) {
             disabled={!name.trim() || isPending}
           >
             {isPending ? "Creating…" : "Create"}
+          </UQuizButton>
+        </UQuizDialogActions>
+      </UQuizDialog>
+
+      <UQuizDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete course?"
+        description={
+          deleteTarget
+            ? `Delete "${deleteTarget.name}"? This removes its ${pluralize(deleteTarget.resourceCount, "resource")} and ${deleteTarget.quizCount} ${deleteTarget.quizCount === 1 ? "quiz" : "quizzes"} — this can't be undone.`
+            : undefined
+        }
+      >
+        <UQuizDialogActions>
+          <UQuizButton
+            variant="ghost"
+            onClick={() => setDeleteTarget(null)}
+            disabled={isDeletePending}
+          >
+            Cancel
+          </UQuizButton>
+          <UQuizButton
+            variant="danger"
+            size="action"
+            onClick={confirmDelete}
+            disabled={isDeletePending}
+          >
+            {isDeletePending ? "Deleting…" : "Delete"}
           </UQuizButton>
         </UQuizDialogActions>
       </UQuizDialog>

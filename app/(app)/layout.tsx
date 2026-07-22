@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth, signOut } from "@/app/auth";
+import { auth } from "@/app/auth";
 import { UQuizHeader } from "@/components/ui";
+import { UserMenu } from "@/components/UserMenu";
 
 export default async function AppLayout({
   children,
@@ -20,19 +21,10 @@ export default async function AppLayout({
         >
           Quizzes
         </Link>
-        <form
-          action={async () => {
-            "use server";
-            await signOut({ redirectTo: "/signin" });
-          }}
-        >
-          <button
-            type="submit"
-            className="cursor-pointer rounded-lg border border-uq-border-strong bg-white px-4 py-2 text-sm text-uq-ink transition-colors hover:border-uq-primary hover:text-uq-primary"
-          >
-            Sign out
-          </button>
-        </form>
+        <UserMenu
+          name={session.user.name ?? ""}
+          email={session.user.email ?? ""}
+        />
       </UQuizHeader>
       {children}
     </>

@@ -2,7 +2,7 @@
 
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/app/auth";
+import { auth, signOut } from "@/app/auth";
 import * as db from "@/lib/db";
 import { fetchYoutubeVideoMeta } from "@/lib/services";
 import { extractYoutubeVideoId } from "@/lib/youtube";
@@ -44,6 +44,16 @@ export async function deleteCourseAction(courseId: string) {
   const userId = await requireUserId();
   await db.deleteCourse(userId, courseId);
   revalidatePath("/");
+}
+
+export async function signOutAction() {
+  await signOut({ redirectTo: "/signin" });
+}
+
+export async function deleteAccountAction() {
+  const userId = await requireUserId();
+  await db.deleteUser(userId);
+  await signOut({ redirectTo: "/signin" });
 }
 
 export async function addResourceAction(
