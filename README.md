@@ -66,10 +66,15 @@ Copy `.env.example` to `.env` and fill in the values:
 cp .env.example .env
 ```
 
-- `DATABASE_URL` — connection string for the database from step 2.
-- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — from a [Google Cloud OAuth client](https://console.cloud.google.com/apis/credentials) with `http://localhost:3000/api/auth/callback/google` as an authorized redirect URI.
-- `NEXTAUTH_SECRET` — any random string (generate one with `openssl rand -base64 32`).
-- `GEMINI_API_KEY` — API key from [Google AI Studio](https://aistudio.google.com/apikey), used by the Google ADK / Gemini pipeline to fetch transcripts and generate quiz questions.
+| Variable | Description |
+| --- | --- |
+| `DATABASE_URL` | Connection string for the database from step 2. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | From a [Google Cloud OAuth client](https://console.cloud.google.com/apis/credentials) with `http://localhost:3000/api/auth/callback/google` as an authorized redirect URI. |
+| `YOUTUBE_API_KEY` | [YouTube Data API v3](https://console.cloud.google.com/apis/library/youtube.googleapis.com) key, used to fetch video titles/thumbnails for resources. |
+| `GEMINI_API_KEY` | API key from [Google AI Studio](https://aistudio.google.com/apikey), used by the Google ADK / Gemini pipeline to fetch transcripts and generate quiz questions. |
+| `NEXTAUTH_SECRET` | Any random string (generate one with `openssl rand -base64 32`), used to sign NextAuth session tokens. |
+| `NEXTAUTH_URL` | Base URL of the app, e.g. `http://localhost:3000`. |
+| `AUTH_TRUST_HOST` | Set to `true` to trust the host header (needed in dev/behind proxies). |
 
 ### 4. Run the dev server
 
@@ -78,3 +83,27 @@ bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Database migrations
+
+Whenever you change `prisma/schema.prisma`, create and apply a migration:
+
+```bash
+bunx prisma migrate dev --name "message"
+```
+
+Replace `"message"` with a short description of the change (e.g. `"add-quiz-attempt-table"`). This writes a new migration under `prisma/migrations`, applies it to your dev database, and regenerates the Prisma Client. Do this after every schema change, and commit the generated migration folder.
+
+In production/CI, apply already-committed migrations without generating new ones or prompting:
+
+```bash
+bunx prisma migrate deploy
+```
+
+Other useful commands:
+
+```bash
+bunx prisma generate       # regenerate the Prisma Client without migrating
+bunx prisma migrate status # check for pending/unapplied migrations
+bunx prisma studio         # browse the database in a local UI
+```
