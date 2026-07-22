@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/app/auth";
@@ -18,6 +18,19 @@ export const metadata: Metadata = {
   title: "uquiz",
   description:
     "Turn YouTube links into custom courses and generate quizzes on the fly.",
+  icons: {
+    icon: "/uquiz.jpg",
+    apple: "/uquiz.jpg",
+  },
+  appleWebApp: {
+    title: "uquiz",
+    statusBarStyle: "black-translucent",
+    startupImage: ["/uquiz.jpg"],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#d0342c",
 };
 
 export default async function RootLayout({
